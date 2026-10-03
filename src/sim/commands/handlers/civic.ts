@@ -1,4 +1,6 @@
 import { GUILD, POLITICS, POPULATION, REPUTATION } from '../../data/balance';
+import { FAVOR_GAINS, NOTORIETY } from '../../data/factions';
+import { addNotoriety, applyFavor } from '../../systems/factions';
 import { ALMS_GOODS, FESTIVAL_LEAD_DAYS } from '../../data/buildings';
 import { CHARACTERS } from '../../data/characters';
 import type { CityId } from '../../data/cities';
@@ -33,8 +35,10 @@ export function handlePray(ctx: SimContext): CommandResult {
   const error = requireNotBusy(state);
   if (error) return error;
   const p = state.player;
-  if (state.tick - p.lastPrayerTick >= WEEK)
+  if (state.tick - p.lastPrayerTick >= WEEK) {
     addReputation(state, where.cityId, { social: REPUTATION.prayerSocial });
+    applyFavor(state, FAVOR_GAINS.pray);
+  }
   p.lastPrayerTick = state.tick;
   p.busyUntilTick = state.tick + 1;
   return ok('Ihr habt im Tempel gebetet.');
@@ -51,6 +55,7 @@ export function handleDonate(ctx: SimContext, amount: number): CommandResult {
   temple.donations += amount;
   const rep = amount * REPUTATION.donationPerGold;
   addReputation(state, where.cityId, { social: rep, societal: rep });
+  applyFavor(state, FAVOR_GAINS.donationPer100, Math.min(FAVOR_GAINS.donationMax, amount / 100));
   return ok(priestHint(temple.donations, temple.stage, temple.buildingUntilTick !== null));
 }
 
@@ -88,7 +93,10 @@ export function handleGiveAlms(ctx: SimContext, goods: GoodAmounts, from: Storag
     });
     return ok('Der Priester dankt Euch, doch für alle Bedürftigen reicht es nicht.');
   }
-  if (city.almsBoostDay !== today) addReputation(state, cityId, { social: REPUTATION.almsSocial });
+  if (city.almsBoostDay !== today) {
+    addReputation(state, cityId, { social: REPUTATION.almsSocial });
+    applyFavor(state, FAVOR_GAINS.alms);
+  }
   city.almsBoostDay = today;
   return ok('Eine äußerst großzügige Spende! Heute strömen viele Bedürftige in die Stadt.');
 }
@@ -126,6 +134,8 @@ export function handleBribe(ctx: SimContext): CommandResult {
   }
   state.player.money -= cost;
   state.cities[where.cityId].bribeVotes += POLITICS.bribeVotes;
+  addNotoriety(state, NOTORIETY.bribe);
+  applyFavor(state, FAVOR_GAINS.bribe);
   return ok(`Ein Ratsherr nimmt ${cost} GS diskret entgegen.`);
 }
 
@@ -148,6 +158,7 @@ export function handleJoinGuild(ctx: SimContext): CommandResult {
   if (error) return error;
   state.player.money -= fee;
   state.player.guilds.push(where.cityId);
+  applyFavor(state, FAVOR_GAINS.joinGuild);
   return ok(`Willkommen in der Gilde von ${cityName(where.cityId)} (${fee} GS).`);
 }
 

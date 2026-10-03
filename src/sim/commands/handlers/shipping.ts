@@ -134,6 +134,8 @@ export function handleSendShip(ctx: SimContext, shipId: ShipId, destination: Cit
   if (problem) return fail(problem);
   const loc = state.player.location;
   if (loc.kind === 'travel' && loc.shipId === shipId) return fail('Ihr seid an Bord – nutzt "Reisen".');
+  // Allein fährt ein Schiff nur unter einem Kapitän (CLAUDE.md §2.3.4: erst selbst, dann delegieren).
+  if (!ship.hasCaptain) return fail('Ohne Kapitän sticht das Schiff nur mit Euch an Bord in See (Reisen).');
   setSail(state, ship, destination);
   return ok(`${ship.name} sticht in See nach ${cityName(destination)}.`);
 }

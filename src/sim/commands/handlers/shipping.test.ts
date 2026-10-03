@@ -6,7 +6,7 @@ import type { ShipId } from '../../state/ids';
 import { run, runDays, setupGame } from '../../testing/fixtures';
 import { amountOf } from '../../systems/storage';
 
-function giveShip(state: ReturnType<typeof setupGame>, crew = 10): ShipState {
+function giveShip(state: ReturnType<typeof setupGame>, crew = 10, hasCaptain = true): ShipState {
   const ship: ShipState = {
     id: 's1' as ShipId,
     name: 'Ursina',
@@ -14,7 +14,7 @@ function giveShip(state: ReturnType<typeof setupGame>, crew = 10): ShipState {
     capacity: 50,
     condition: 100,
     crew,
-    hasCaptain: false,
+    hasCaptain,
     cargo: {},
     location: { kind: 'port', cityId: 'NewArk' },
     repairUntilTick: null,
@@ -50,6 +50,35 @@ describe('Werft', () => {
     );
     runDays(state, 20);
     expect(ship.condition).toBe(100);
+  });
+});
+
+describe('Kapitän', () => {
+  it('ohne Kapitän fährt ein Schiff nur mit der Figur an Bord', () => {
+    const state = setupGame({ money: 1000 });
+    const ship = giveShip(state, 10, false);
+    const send = applyCommand(state, { type: 'SendShip', shipId: ship.id, destination: 'PortNyx' }).result;
+    expect(send.ok).toBe(false);
+    expect(send.ok ? '' : send.reason).toContain('Kapitän');
+    expect(applyCommand(state, { type: 'Travel', destination: 'PortNyx', shipId: ship.id }).result.ok).toBe(
+      true,
+    );
+  });
+
+  it('mit Kapitän lässt sich das Schiff allein losschicken', () => {
+    const state = setupGame({ money: 1000 });
+    const ship = giveShip(state, 10, true);
+    expect(applyCommand(state, { type: 'SendShip', shipId: ship.id, destination: 'PortNyx' }).result.ok).toBe(
+      true,
+    );
+  });
+
+  it('Kapitäne lassen sich schon ab Kaufmann anheuern', () => {
+    const state = setupGame({ rank: 'merchant', money: 10_000 });
+    const ship = giveShip(state, 10, false);
+    state.cities.NewArk.tavern.captainAvailable = true;
+    run(state, { type: 'HireCaptain', shipId: ship.id });
+    expect(ship.hasCaptain).toBe(true);
   });
 });
 

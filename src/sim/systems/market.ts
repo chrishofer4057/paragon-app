@@ -1,4 +1,5 @@
 import { CHARACTERS } from '../data/characters';
+import { merchantTradeBonus } from './factions';
 import type { CityId } from '../data/cities';
 import type { GoodAmounts, GoodId } from '../data/goods';
 import { emit, type SimContext } from '../context';
@@ -22,7 +23,7 @@ export interface TradeOutcome {
 /** Preisvorteil beim persönlichen Handel: Figurenbonus + 0,5 % je Stufe "Handeln". */
 export function personalPriceBonus(state: GameState): number {
   const character = CHARACTERS[state.player.characterId];
-  return character.personalTradeBonus + state.player.skills.trading.level * 0.005;
+  return character.personalTradeBonus + state.player.skills.trading.level * 0.005 + merchantTradeBonus(state);
 }
 
 export function sellToMarket(

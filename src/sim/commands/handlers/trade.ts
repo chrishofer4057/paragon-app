@@ -31,10 +31,10 @@ import {
 } from '../guards';
 
 /** Tagesbuch zurücksetzen, sobald ein neuer Tag begonnen hat. */
-function ledger(state: GameState): GameState['player']['dailyLedger'] {
+export function ledger(state: GameState): GameState['player']['dailyLedger'] {
   const today = dayOf(state.tick);
   if (state.player.dailyLedger.day !== today)
-    state.player.dailyLedger = { day: today, bought: {}, stallSold: {} };
+    state.player.dailyLedger = { day: today, bought: {}, stallSold: {}, haggles: {} };
   return state.player.dailyLedger;
 }
 

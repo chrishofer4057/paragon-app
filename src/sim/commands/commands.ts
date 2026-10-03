@@ -1,7 +1,9 @@
+import type { FactionId } from '../data/factions';
 import type { BusinessTypeId } from '../data/businesses';
 import type { HouseTypeId, InfrastructureId } from '../data/buildings';
 import type { CityId } from '../data/cities';
 import type { GoodAmounts, GoodId } from '../data/goods';
+import type { LineId } from '../data/lines';
 import type { ShipTypeId } from '../data/ships';
 import type { MissionKind, MotionKind, StandingOrder } from '../state/gameState';
 import type { BusinessId, ContractId, HouseId, LoanId, OfferId, QuestId, ShipId } from '../state/ids';
@@ -28,6 +30,17 @@ export type Command =
   | { type: 'SellAtStall'; good: GoodId; amount: number; from: StorageRef }
   | { type: 'BuyFromPeddler' }
   | { type: 'SellToLord'; good: GoodId; amount: number; from: StorageRef }
+  | {
+      type: 'Haggle';
+      good: GoodId;
+      amount: number;
+      direction: 'buy' | 'sell';
+      pricePerUnit: number;
+      storage: StorageRef;
+    }
+  // --- Fraktionen ---
+  | { type: 'PledgeFaction'; faction: FactionId | null }
+  | { type: 'Smuggle'; good: GoodId; amount: number; storage: StorageRef }
   // --- Kontor ---
   | { type: 'FoundKontor' }
   | { type: 'BuildWarehouse' }
@@ -76,14 +89,28 @@ export type Command =
   | { type: 'RenameShip'; shipId: ShipId; name: string }
   | { type: 'SendShip'; shipId: ShipId; destination: CityId }
   | { type: 'Travel'; destination: CityId; shipId?: ShipId }
+  | {
+      type: 'BookLiner';
+      lineId: LineId;
+      destination: CityId;
+      cargo?: { good: GoodId; amount: number; from: StorageRef };
+    }
+  | { type: 'CancelLiner' }
   | { type: 'ShipCargo'; good: GoodId; amount: number; destination: CityId; from: StorageRef };
 
 export type CommandType = Command['type'];
 
-export type CommandResult = { ok: true; message?: string } | { ok: false; reason: string };
+/**
+ * Ergebnis eines Commands. `tag` unterscheidet gültige Ausgänge, die die UI verschieden
+ * darstellen soll (z. B. Feilschen: 'accepted' oder 'rejected').
+ */
+export type CommandResult = { ok: true; message?: string; tag?: string } | { ok: false; reason: string };
 
-export function ok(message?: string): CommandResult {
-  return message === undefined ? { ok: true } : { ok: true, message };
+export function ok(message?: string, tag?: string): CommandResult {
+  const result: CommandResult = { ok: true };
+  if (message !== undefined) result.message = message;
+  if (tag !== undefined) result.tag = tag;
+  return result;
 }
 
 export function fail(reason: string): CommandResult {

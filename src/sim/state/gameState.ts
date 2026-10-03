@@ -1,8 +1,10 @@
+import type { FactionId } from '../data/factions';
 import type { BusinessTypeId } from '../data/businesses';
 import type { HouseTypeId, InfrastructureId } from '../data/buildings';
 import type { CharacterId } from '../data/characters';
 import type { CityId } from '../data/cities';
 import type { GoodAmounts, GoodId } from '../data/goods';
+import type { LineId } from '../data/lines';
 import type { RankId } from '../data/ranks';
 import type { ShipTypeId } from '../data/ships';
 import type { SkillId } from '../data/skills';
@@ -270,6 +272,17 @@ export interface MissionState {
 
 export type MissionKind = 'cityGlory' | 'landRoute';
 
+export interface LinerBooking {
+  lineId: LineId;
+  from: CityId;
+  to: CityId;
+  departTick: number;
+  arriveTick: number;
+  cargo: { good: GoodId; amount: number } | null;
+  departed: boolean;
+  passengerAboard: boolean;
+}
+
 export interface CargoConsignment {
   id: ShipmentId;
   good: GoodId;
@@ -300,7 +313,13 @@ export interface PlayerState {
   lastPrayerTick: number;
   lastBathTick: number;
   /** Tageskäufe je Ware (Tagelöhner-Limit) und Standverkäufe. */
-  dailyLedger: { day: number; bought: GoodAmounts; stallSold: GoodAmounts };
+  dailyLedger: { day: number; bought: GoodAmounts; stallSold: GoodAmounts; haggles: GoodAmounts };
+  /** Gebuchte Fahrt auf einem Linienschiff (mit oder ohne Fracht). */
+  linerBooking: LinerBooking | null;
+  /** Hafenlager: Fracht, die mit dem Linienschiff angekommen ist. */
+  holds: Partial<Record<CityId, GoodAmounts>>;
+  /** Laune der Händler je Stadt (0.2 … 1): wer zu gierig feilscht, verdirbt sie. */
+  merchantMood: Partial<Record<CityId, number>>;
   netWorth: number;
   quests: TavernQuest[];
   consignments: CargoConsignment[];
@@ -310,6 +329,14 @@ export interface PlayerState {
   liaInvited: boolean;
   /** Ränge, für die bereits ein "fast geschafft"-Brief verschickt wurde (keine Wiederholung). */
   rankHints: RankId[];
+  /** Wohlwollen der Fraktionen (−100 … 100). */
+  factions: Record<FactionId, number>;
+  /** Verbündete Fraktion (höchstens eine). */
+  pledge: FactionId | null;
+  /** Wann das Bündnis zuletzt geschlossen oder gelöst wurde. */
+  pledgeChangedTick: number;
+  /** Verruf durch unsaubere Geschäfte (0 … 100). */
+  notoriety: number;
 }
 
 // ---------------------------------------------------------------------------

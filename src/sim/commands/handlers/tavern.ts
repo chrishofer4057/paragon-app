@@ -1,4 +1,6 @@
 import { REPUTATION, TAVERN } from '../../data/balance';
+import { FAVOR_GAINS } from '../../data/factions';
+import { applyFavor, sailorFeeFactor } from '../../systems/factions';
 import { CITIES, CITY_IDS } from '../../data/cities';
 import { GOOD_IDS, GOODS } from '../../data/goods';
 import { CAPTAIN_HIRE_FEE, SHIP_TYPES } from '../../data/ships';
@@ -42,6 +44,7 @@ export function handleDeliverQuestGoods(ctx: SimContext, questId: QuestId, from:
   state.player.money += reward;
   state.player.quests = state.player.quests.filter((q) => q.id !== questId);
   addReputation(state, where.cityId, { social: REPUTATION.questFlat, societal: REPUTATION.questFlat });
+  applyFavor(state, FAVOR_GAINS.deliverQuest);
   return ok(`Der Käufer zahlt ${reward} GS für ${amount} ${GOODS[good].name}.`);
 }
 
@@ -74,6 +77,7 @@ export function handleBuyInformation(ctx: SimContext): CommandResult {
     }
   }
   state.player.money -= TAVERN.informantFee;
+  applyFavor(state, FAVOR_GAINS.buyInformation);
   postMessage(ctx, 'info', 'Der Informant flüstert', `${shortage.text} ${surplus.text}`, where.cityId);
   return ok(`${shortage.text} ${surplus.text}`);
 }
@@ -95,9 +99,10 @@ export function handleHireSailors(ctx: SimContext, shipId: ShipId, count: number
   const available = Math.floor(city.population.beggars * TAVERN.sailorShareOfBeggars);
   if (count > available) return fail(`In der Taverne sitzen nur ${available} arbeitswillige Matrosen.`);
   if (ship.crew + count > SHIP_TYPES[ship.type].maxCrew) return fail('So viele Leute passen nicht an Bord.');
-  const error = requireMoney(state, count * TAVERN.sailorHireFee);
+  const error = requireMoney(state, Math.round(count * TAVERN.sailorHireFee * sailorFeeFactor(state)));
   if (error) return error;
-  state.player.money -= count * TAVERN.sailorHireFee;
+  state.player.money -= Math.round(count * TAVERN.sailorHireFee * sailorFeeFactor(state));
+  applyFavor(state, FAVOR_GAINS.hireSailors);
   city.population.beggars -= count;
   ship.crew += count;
   return ok(`${count} Matrosen angeheuert.`);

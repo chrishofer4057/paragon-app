@@ -20,7 +20,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: ['@angular/*', 'phaser', 'phaser/*', 'electron', 'electron/*'] },
+        { patterns: ['@angular/*', 'phaser', 'phaser/*', 'three', 'three/*', 'electron', 'electron/*'] },
       ],
       'no-restricted-properties': [
         'error',

@@ -1,3 +1,6 @@
+import { handleBookLiner, handleCancelLiner } from './handlers/liner';
+import { handlePledgeFaction, handleSmuggle } from './handlers/factions';
+import { handleHaggle } from './handlers/haggle';
 import type { SimContext } from '../context';
 import type { Command, CommandResult } from './commands';
 import {
@@ -84,6 +87,19 @@ export function dispatch(ctx: SimContext, command: Command): CommandResult {
       return handleBuyFromPeddler(ctx);
     case 'SellToLord':
       return handleSellToLord(ctx, command.good, command.amount, command.from);
+    case 'Haggle':
+      return handleHaggle(
+        ctx,
+        command.good,
+        command.amount,
+        command.direction,
+        command.pricePerUnit,
+        command.storage,
+      );
+    case 'PledgeFaction':
+      return handlePledgeFaction(ctx, command.faction);
+    case 'Smuggle':
+      return handleSmuggle(ctx, command.good, command.amount, command.storage);
     case 'FoundKontor':
       return handleFoundKontor(ctx);
     case 'BuildWarehouse':
@@ -166,6 +182,10 @@ export function dispatch(ctx: SimContext, command: Command): CommandResult {
       return handleSendShip(ctx, command.shipId, command.destination);
     case 'Travel':
       return handleTravel(ctx, command.destination, command.shipId);
+    case 'BookLiner':
+      return handleBookLiner(ctx, command.lineId, command.destination, command.cargo);
+    case 'CancelLiner':
+      return handleCancelLiner(ctx);
     case 'ShipCargo':
       return handleShipCargo(ctx, command.good, command.amount, command.destination, command.from);
   }

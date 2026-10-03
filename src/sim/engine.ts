@@ -1,3 +1,5 @@
+import { FACTION_IDS, type FactionId } from './data/factions';
+import { runFactionsWeek } from './systems/factions';
 import { CITY_HOUSING_BUILD_THRESHOLD } from './data/buildings';
 import { CHARACTERS, type CharacterId } from './data/characters';
 import { CITIES, CITY_IDS, type CityId } from './data/cities';
@@ -23,10 +25,12 @@ import { runPoliticsDay, runPoliticsMonth } from './systems/politics';
 import { runCityHousingWeek, runPopulationDay } from './systems/population';
 import { runRankCheckMonth } from './systems/ranks';
 import { decayReputation, addReputation } from './systems/reputation';
+import { recoverMerchantMood } from './systems/haggle';
 import { runAccusationsWeek, runBurglaryWeek } from './systems/risks';
 import { runTavernDay } from './systems/tavern';
 import { runTempleDay } from './systems/temple';
 import { runTravelHour } from './systems/travel';
+import { runLinersHour } from './systems/liners';
 import {
   DAYS_PER_YEAR,
   START_TICK,
@@ -88,7 +92,10 @@ export function createNewGame(options: NewGameOptions): GameState {
       stalls: {},
       lastPrayerTick: START_TICK,
       lastBathTick: START_TICK,
-      dailyLedger: { day: dayOf(START_TICK), bought: {}, stallSold: {} },
+      dailyLedger: { day: dayOf(START_TICK), bought: {}, stallSold: {}, haggles: {} },
+      merchantMood: {},
+      linerBooking: null,
+      holds: {},
       netWorth: character.startMoney,
       quests: [],
       consignments: [],
@@ -97,6 +104,13 @@ export function createNewGame(options: NewGameOptions): GameState {
       missionLockoutUntilTick: 0,
       liaInvited: false,
       rankHints: [],
+      factions: Object.fromEntries(FACTION_IDS.map((id) => [id, character.startFavor[id] ?? 0])) as Record<
+        FactionId,
+        number
+      >,
+      pledge: null,
+      pledgeChangedTick: -1_000_000,
+      notoriety: 0,
     },
     ships: {},
     constructions: {},
@@ -154,6 +168,7 @@ function runDaily(ctx: SimContext): void {
   runHiringDay(state);
   updateTenants(state);
   decayReputation(state);
+  recoverMerchantMood(state);
   runManagersDay(ctx);
   runTempleDay(ctx);
   runContractsDay(ctx);
@@ -173,6 +188,7 @@ function runWeekly(ctx: SimContext): void {
   runCityHousingWeek(state, CITY_HOUSING_BUILD_THRESHOLD);
   runAccusationsWeek(ctx);
   runBurglaryWeek(ctx);
+  runFactionsWeek(ctx);
   runBorrowerOffersWeek(ctx);
   runShipyardDecayWeek(state);
 }
@@ -192,6 +208,7 @@ export function tick(state: GameState, hours = 1): SimEvent[] {
     runBusinessesHour(state);
     deliverNpcShipments(ctx);
     runTravelHour(ctx);
+    runLinersHour(ctx);
     runConstructionHour(ctx);
     runFestivalsHour(ctx);
     if (isStartOfDay(state.tick)) runDaily(ctx);

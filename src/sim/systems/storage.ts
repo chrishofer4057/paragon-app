@@ -11,7 +11,10 @@ import type { ShipId } from '../state/ids';
  */
 
 export type StorageRef =
-  { kind: 'inventory' } | { kind: 'kontor'; cityId: CityId } | { kind: 'ship'; shipId: ShipId };
+  | { kind: 'inventory' }
+  | { kind: 'kontor'; cityId: CityId }
+  | { kind: 'ship'; shipId: ShipId }
+  | { kind: 'hold'; cityId: CityId };
 
 export function amountOf(storage: GoodAmounts, good: GoodId): number {
   return storage[good] ?? 0;
@@ -46,6 +49,8 @@ export function resolveStorage(state: GameState, ref: StorageRef): GoodAmounts |
       return state.player.kontors[ref.cityId]?.storage;
     case 'ship':
       return state.ships[ref.shipId]?.cargo;
+    case 'hold':
+      return state.player.holds[ref.cityId];
   }
 }
 
@@ -63,6 +68,9 @@ export function freeCapacity(state: GameState, ref: StorageRef): number {
       const ship = state.ships[ref.shipId];
       return ship ? Math.max(0, ship.capacity - totalAmount(ship.cargo)) : 0;
     }
+    case 'hold':
+      // Ins Hafenlager wird nur ausgeladen, nicht eingelagert.
+      return 0;
   }
 }
 
@@ -81,5 +89,12 @@ export function storageInCity(state: GameState, ref: StorageRef, cityId: CityId)
       const ship = state.ships[ref.shipId];
       return ship !== undefined && shipInPort(ship) === cityId && ship.repairUntilTick === null;
     }
+    case 'hold':
+      return (
+        ref.cityId === cityId &&
+        state.player.holds[cityId] !== undefined &&
+        state.player.location.kind === 'city' &&
+        state.player.location.cityId === cityId
+      );
   }
 }

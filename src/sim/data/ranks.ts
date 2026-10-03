@@ -113,7 +113,14 @@ export const RANKS: Readonly<Record<RankId, RankDef>> = {
     societal: 5,
     requiresHomeGuild: false,
     elected: false,
-    grants: ['ownShips', 'buildBusinesses', 'buildHouses', 'fundInfrastructure', 'foundKontorAbroad'],
+    grants: [
+      'ownShips',
+      'hireCaptain',
+      'buildBusinesses',
+      'buildHouses',
+      'fundInfrastructure',
+      'foundKontorAbroad',
+    ],
   },
   distanceMerchant: {
     id: 'distanceMerchant',
@@ -125,7 +132,7 @@ export const RANKS: Readonly<Record<RankId, RankDef>> = {
     societal: 10,
     requiresHomeGuild: true,
     elected: false,
-    grants: ['hireManager', 'hireCaptain'],
+    grants: ['hireManager'],
   },
   councilor: {
     id: 'councilor',

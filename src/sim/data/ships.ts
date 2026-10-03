@@ -95,9 +95,9 @@ export const SHIP_WEAR_PER_DAY = 0.4;
 /** Unter diesem Zustand verweigert die Mannschaft die Ausfahrt. */
 export const SHIP_MIN_CONDITION_TO_SAIL = 15;
 
-/** Überfahrt als Passagier ohne eigenes Schiff. */
+/** Gecharterte Überfahrt: sofort und direkt, aber deutlich teurer als ein Linienschiff. */
 export const PASSAGE = {
-  farePerDistance: 2,
+  farePerDistance: 2.5,
   speedPerDay: 14,
 } as const;
 

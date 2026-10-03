@@ -63,6 +63,11 @@ export function dailyPlayerCosts(state: GameState): number {
 
 export function runFinanceDay(ctx: SimContext): void {
   const { state } = ctx;
+  // Leere Hafenlager aufräumen
+  for (const cityId of CITY_IDS) {
+    const hold = state.player.holds[cityId];
+    if (hold && totalAmount(hold) <= 1e-4) delete state.player.holds[cityId];
+  }
   state.player.money -= dailyPlayerCosts(state);
   for (const cityId of CITY_IDS) {
     const city = state.cities[cityId];
@@ -155,6 +160,10 @@ export function computeNetWorth(state: GameState): number {
   }
   for (const b of Object.values(p.businesses)) total += BUSINESSES[b.type].buildCost;
   for (const h of Object.values(p.houses)) total += HOUSES[h.type].cost;
+  for (const cityId of CITY_IDS) {
+    const hold = p.holds[cityId];
+    if (hold) total += valueOfGoods(state, hold, cityId);
+  }
   for (const ship of Object.values(state.ships)) {
     total += SHIP_TYPES[ship.type].cost * (0.5 + ship.condition / 200);
     const port = ship.location.kind === 'port' ? ship.location.cityId : null;

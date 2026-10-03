@@ -5,6 +5,12 @@ Vorgaben des Entwicklers (Referenzbilder vom 2026-10-02).
 ## Gesamtstil
 - Stilisiert, cartoonig, warme Farben, weiche Formen, leicht "3D-gemalt".
 - Kamera: hohe Draufsicht / schräg-isometrisch über einer Hafenstadt, wie das Key-Art von *Brave Conquest* (Wüstenhafen, Luftschiff, Segelschiff, Kaimauern).
+- Technik: echtes 3D (Three.js), Welt aus Kacheln mit Höhenstufen, flach schattierte Low-Poly-Modelle,
+  warme Beleuchtung mit Tag/Nacht (Laternen und Fenster leuchten nachts). Perspektivkamera ca. 50° geneigt,
+  dreh- und zoombar.
+- Derzeit alles prozedurale Platzhalter (`src/game/three/models`). Echte Modelle kommen als GLB;
+  FBX-Quellen werden mit Blender konvertiert. Maßstab: 1 Kachel = 1 Einheit, Figur ≈ 1 Einheit hoch,
+  Wohnhaus 3×3 Kacheln und ≈ 3 Einheiten hoch.
 - Ambiente: lebendige Hafenstädte, Wasser, Stege, Marktstände.
 
 ## Südliche Städte (mapY ≥ 50, `culture: 'south'`)

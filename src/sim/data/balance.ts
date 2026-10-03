@@ -48,6 +48,8 @@ export const WORLD = {
   builderCrewPerPopulation: 2500,
   startTreasuryPerCapita: 4,
   notablesPerCity: 4,
+  /** Anteil der benötigten Brunnen, den eine Stadt zu Beginn hat. */
+  startWellShare: 0.5,
 } as const;
 
 /** Hintergrundhandel der KI-Händler, damit Städte ohne eigene Produktion nicht verhungern. */
@@ -299,6 +301,23 @@ export const GATE = {
   maxUnitsPerGood: 120,
   priceFactorMin: 1.15,
   priceFactorMax: 1.45,
+} as const;
+
+/** Feilschen (CLAUDE.md §2.4): verborgene Schmerzgrenze je Händler, Ware und Tag. */
+export const HAGGLE = {
+  /** Spielraum des Händlers relativ zum Marktpreis. */
+  minMargin: 0.03,
+  maxMargin: 0.16,
+  /** Zusätzlicher Spielraum je Stufe "Handeln". */
+  marginPerSkillLevel: 0.004,
+  attemptsPerGoodPerDay: 3,
+  /** Knapp daneben: Händler zögert. Weit daneben: Händler ist beleidigt. */
+  closeMiss: 0.05,
+  moodPenaltyClose: 0.05,
+  moodPenaltyGreedy: 0.12,
+  greedySocietalPenalty: 0.02,
+  minMood: 0.2,
+  moodRecoveryPerDay: 0.05,
 } as const;
 
 export const MESSAGES = {

@@ -1,4 +1,5 @@
 import { POLITICS, REPUTATION } from '../data/balance';
+import { notorietyElectionPenalty } from './factions';
 import { CITIES, CITY_IDS, type CityId } from '../data/cities';
 import { rankIndex } from '../data/ranks';
 import { emit, postMessage, type SimContext } from '../context';
@@ -54,7 +55,7 @@ export function electionForecast(state: GameState, cityId: CityId): Candidate[] 
     const incumbency = isMayorOf(state, cityId) ? 5 : 0;
     candidates.push({
       name: state.player.name,
-      score: combinedReputation(rep) + city.bribeVotes + incumbency,
+      score: combinedReputation(rep) + city.bribeVotes + incumbency - notorietyElectionPenalty(state),
       isPlayer: true,
     });
   }

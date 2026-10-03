@@ -1,12 +1,14 @@
 import type { GameState } from '../sim/state/gameState';
 import { toDate } from '../sim/time';
+import { migrate_1_to_2 } from './migrations/migrate_1_to_2';
+import { migrate_2_to_3 } from './migrations/migrate_2_to_3';
 
 /**
  * Speicherformat (CLAUDE.md §6). Bei jeder Änderung am Zustandsmodell SAVE_VERSION
  * erhöhen und in MIGRATIONS eine Funktion `n -> n+1` ergänzen (mit Test).
  */
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 3;
 
 export interface SaveFile {
   saveVersion: number;
@@ -20,7 +22,7 @@ export interface SaveFile {
 type Migration = (state: unknown) => unknown;
 
 /** Index n migriert Version n+1 nach n+2 (MIGRATIONS[0]: 1 -> 2). */
-export const MIGRATIONS: readonly Migration[] = [];
+export const MIGRATIONS: readonly Migration[] = [migrate_1_to_2, migrate_2_to_3];
 
 export function createSaveFile(
   state: GameState,

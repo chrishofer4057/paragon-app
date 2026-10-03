@@ -84,9 +84,10 @@ describe('Ansehen', () => {
       kontorIn: ['NewArk'],
       kontorGoods: { Stone: 100, Wood: 20 },
     });
+    const wellsBefore = state.cities.NewArk.infrastructure.well;
     run(state, { type: 'FundInfrastructure', infrastructure: 'well' });
     runDays(state, 6);
-    expect(state.cities.NewArk.infrastructure.well).toBe(1);
+    expect(state.cities.NewArk.infrastructure.well).toBe(wellsBefore + 1);
     expect(state.player.reputation.NewArk.socialBase).toBeGreaterThan(0);
     // Ein Brunnen pro 500 Einwohner – mehr lehnt die Stadt ab.
     state.cities.NewArk.infrastructure.well = 100;

@@ -1,3 +1,4 @@
+import type { FactionId } from './factions';
 import type { CityId } from './cities';
 import type { GoodId } from './goods';
 import type { SkillId } from './skills';
@@ -34,6 +35,8 @@ export interface CharacterDef {
   guildFeeFactor: number;
   /** Faktor auf Frachtmiete und Überfahrten. */
   freightFactor: number;
+  /** Wohlwollen der Fraktionen zu Spielbeginn. */
+  startFavor: Partial<Record<FactionId, number>>;
 }
 
 export const CHARACTERS: Readonly<Record<CharacterId, CharacterDef>> = {
@@ -52,6 +55,7 @@ export const CHARACTERS: Readonly<Record<CharacterId, CharacterDef>> = {
     startReputation: [{ cityId: 'NewArk', social: 0.2, societal: 0 }],
     guildFeeFactor: 1,
     freightFactor: 1,
+    startFavor: { temple: 5 },
   },
   ursina: {
     id: 'ursina',
@@ -68,6 +72,7 @@ export const CHARACTERS: Readonly<Record<CharacterId, CharacterDef>> = {
     startReputation: [],
     guildFeeFactor: 1,
     freightFactor: 1,
+    startFavor: { merchants: 8 },
   },
   duri: {
     id: 'duri',
@@ -87,6 +92,7 @@ export const CHARACTERS: Readonly<Record<CharacterId, CharacterDef>> = {
     ],
     guildFeeFactor: 1,
     freightFactor: 0.75,
+    startFavor: { harbour: 15 },
   },
   mengia: {
     id: 'mengia',
@@ -103,6 +109,7 @@ export const CHARACTERS: Readonly<Record<CharacterId, CharacterDef>> = {
     startReputation: [{ cityId: 'NewArk', social: 0.3, societal: 1.5 }],
     guildFeeFactor: 0.5,
     freightFactor: 1,
+    startFavor: { merchants: 12, temple: 5 },
   },
 };
 

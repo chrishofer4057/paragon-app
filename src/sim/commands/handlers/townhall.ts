@@ -1,4 +1,6 @@
 import { CONTRACTS, POPULATION } from '../../data/balance';
+import { FAVOR_GAINS } from '../../data/factions';
+import { applyFavor } from '../../systems/factions';
 import { GOODS, type GoodId } from '../../data/goods';
 import { newId, type SimContext } from '../../context';
 import type { MissionKind, MotionKind } from '../../state/gameState';
@@ -66,6 +68,7 @@ export function handleDeliverContract(
   city.market[contract.good] += amount;
   contract.delivered += amount;
   completeContractIfDone(ctx, where.cityId, contract);
+  if (contract.delivered >= contract.amount - 1e-6) applyFavor(state, FAVOR_GAINS.deliverContract);
   return ok(`${amount} ${GOODS[contract.good].name} geliefert.`);
 }
 

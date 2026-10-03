@@ -1,4 +1,5 @@
 import { ACCUSATIONS, BURGLARY, REPUTATION } from '../data/balance';
+import { accusationFactor } from './factions';
 import { CITIES, CITY_IDS } from '../data/cities';
 import { GOODS, type GoodId } from '../data/goods';
 import { postMessage, type SimContext } from '../context';
@@ -23,7 +24,11 @@ export function runAccusationsWeek(ctx: SimContext): void {
     { last: p.lastBathTick, charge: 'der Behauptung, die Welt sei eine Scheibe – Ihr meidet das Badehaus' },
   ];
   for (const check of checks) {
-    if (state.tick - check.last <= grace || !chance(state.rng, ACCUSATIONS.weeklyChance)) continue;
+    if (
+      state.tick - check.last <= grace ||
+      !chance(state.rng, ACCUSATIONS.weeklyChance * accusationFactor(state))
+    )
+      continue;
     const fine = Math.round(Math.max(ACCUSATIONS.minFine, p.netWorth * ACCUSATIONS.fineShareOfNetWorth));
     p.money -= fine;
     addReputation(state, p.homeCityId, {

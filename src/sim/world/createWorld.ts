@@ -1,6 +1,6 @@
 import { MARKET, POLITICS, POPULATION, WORLD } from '../data/balance';
 import { INFRASTRUCTURE_IDS } from '../data/buildings';
-import { CITIES, CITY_IDS, START_POPULATION, type CityId } from '../data/cities';
+import { CITIES, CITY_IDS, START_POPULATION, type CityId, type CitySize } from '../data/cities';
 import { GOOD_IDS, type GoodAmounts, type GoodId } from '../data/goods';
 import { FIRST_NAMES, LAST_NAMES } from '../data/names';
 import { newId } from '../context';
@@ -28,8 +28,17 @@ function emptyMarket(): Record<GoodId, number> {
   return Object.fromEntries(GOOD_IDS.map((g) => [g, 0])) as Record<GoodId, number>;
 }
 
-function emptyInfrastructure(): InfrastructureCounts {
-  return Object.fromEntries(INFRASTRUCTURE_IDS.map((id) => [id, 0])) as InfrastructureCounts;
+/**
+ * Grundausstattung: Städte haben schon etwas Infrastruktur (sonst wüten Seuchen und
+ * Brände sofort), aber deutlich weniger als nötig – Raum für Stiftungen des Spielers.
+ */
+function startInfrastructure(size: CitySize, population: number): InfrastructureCounts {
+  const counts = Object.fromEntries(INFRASTRUCTURE_IDS.map((id) => [id, 0])) as InfrastructureCounts;
+  counts.well = Math.ceil(Math.ceil(population / 500) * WORLD.startWellShare);
+  counts.road = 1;
+  counts.chapel = size === 'small' ? 0 : 1;
+  counts.hospital = size === 'large' ? 1 : 0;
+  return counts;
 }
 
 function createCity(state: GameState, id: CityId): CityState {
@@ -60,7 +69,7 @@ function createCity(state: GameState, id: CityId): CityState {
       poor: Math.ceil(start.poor * WORLD.startHousingSlack),
     },
     cityJobs: start.poor,
-    infrastructure: emptyInfrastructure(),
+    infrastructure: startInfrastructure(def.size, total),
     temple: { stage: 0, donations: 0, materials: {}, buildingUntilTick: null },
     treasury,
     treasuryMonthStart: treasury,

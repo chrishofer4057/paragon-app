@@ -1,0 +1,8 @@
+{
+  "models": {
+    "house-north": {
+      "files": ["house_north_0.glb", "house_north_1.glb", "house_north_2.glb", "house_north_3.glb"]
+    },
+    "house-south": { "files": ["house_south_0.glb", "house_south_1.glb"] }
+  }
+}

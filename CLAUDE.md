@@ -9,7 +9,7 @@
 
 Eine Handels- und Wirtschaftssimulation im Stil der Hanse-Zeit, inspiriert von klassischen Handelssimulationen wie „Patrizier“, aber **deutlich interaktiver**.
 
-Der Spieler steuert eine **begehbare Figur in Draufsicht** und bleibt während des gesamten Spiels selbst an den Aktionen beteiligt. Er beginnt als mittelloser Einzelner, sammelt selbst Rohstoffe, nimmt Aufträge an, handelt, mietet Frachtraum, kauft oder baut Schiffe und steigt schließlich zum mächtigen Patrizier auf.
+Der Spieler steuert per Maus eine **begehbare Figur in einer 3D-Welt aus Kacheln** (schräge Draufsicht) und bleibt während des gesamten Spiels selbst an den Aktionen beteiligt. Er beginnt als mittelloser Einzelner, sammelt selbst Rohstoffe, nimmt Aufträge an, handelt, mietet Frachtraum, kauft oder baut Schiffe und steigt schließlich zum mächtigen Patrizier auf.
 
 **Kernversprechen:** Die eigenen Handgriffe werden nie bedeutungslos. Die Rolle des Spielers wandelt sich von Handarbeit über Handel und Seefahrt hin zu Einfluss und Politik.
 
@@ -94,9 +94,9 @@ Statische Definitionen liegen in `src/sim/data/`. Übernommen aus dem Paragon-Pr
 | Bereich | Technologie |
 |---|---|
 | Sprache | TypeScript (`strict: true`, `noUncheckedIndexedAccess`) |
-| Spielwelt / Rendering | Phaser (aktuelle stabile Version) |
+| Spielwelt / Rendering | Three.js (3D, Kachelwelt, prozedurale Platzhaltermodelle; später glTF/GLB-Modelle) |
 | Oberfläche | Angular (Signals, zoneless bevorzugt) |
-| Karten | Tiled-Editor, Export als JSON |
+| Karten | Stadtgrundriss als Kachelraster (`src/game/cityLayout.ts`), später Tiled-Editor (JSON) |
 | Tests | Vitest (Simulation), Playwright optional für E2E |
 | Desktop / Steam | Electron + steamworks.js |
 | Browser-Demo | Web-Build, Speichern in IndexedDB |
@@ -111,7 +111,7 @@ Befehle: `npm test`, `npm run typecheck`, `npm run lint`, `npm run check` (alles
 
 ```
 ┌─────────────────────┐   ┌─────────────────────┐
-│ Phaser (Spielwelt)  │   │ Angular (UI)        │
+│ Three.js (3D-Welt)  │   │ Angular (UI)        │
 │ – liest Zustand     │   │ – liest Zustand     │
 │ – sendet Commands   │   │ – sendet Commands   │
 └─────────┬───────────┘   └──────────┬──────────┘
@@ -127,7 +127,7 @@ Befehle: `npm test`, `npm run typecheck`, `npm run lint`, `npm run check` (alles
 ```
 
 **Verbindliche Regeln für `src/sim/`** (per ESLint abgesichert):
-- Keine Imports aus Phaser, Angular, DOM oder Electron. Die Simulation läuft headless in Node (Vitest).
+- Keine Imports aus Three.js, Phaser, Angular, DOM oder Electron. Die Simulation läuft headless in Node (Vitest).
 - Zustand ist **reines, serialisierbares JSON**: keine Klasseninstanzen, keine Funktionen, keine zirkulären Referenzen. Beziehungen nur über **IDs**.
 - **Deterministisch:** kein `Math.random()`, kein `Date.now()`. Zufall nur über `sim/rng.ts` (Zustand in `state.rng`); für zustandslose Tageswürfe `hashFloat`.
 - Zustandsänderungen **ausschließlich** über `applyCommand(state, command)` und `tick(state, hours)`.
@@ -135,7 +135,7 @@ Befehle: `npm test`, `npm run typecheck`, `npm run lint`, `npm run check` (alles
 - Die Simulation gibt **Events** aus (`events/events.ts`) und schreibt amtliche Nachrichten (`state.messages`).
 - `applyCommand`/`tick` verändern den Zustand direkt (Performance); `applyCommandPure` arbeitet auf einer Kopie.
 
-**Phaser und Angular:** verändern den Simulationszustand nie direkt. Phasers Spielschleife läuft außerhalb der Angular-Änderungserkennung. Angular bekommt den Zustand über Signals aus einem `GameService`.
+**3D-Welt und Angular:** verändern den Simulationszustand nie direkt. Die 3D-Welt (`src/game/three`) kennt nur das `GameBridge`-Interface, nicht Angular; ihre Render-Schleife (`requestAnimationFrame`) läuft außerhalb der Angular-Änderungserkennung. Angular bekommt den Zustand über Signals aus einem `GameService`.
 
 ### 5.2 Zeit
 - **1 Tick = 1 Spielstunde.** Kalender: 12 Monate à 30 Tage, Start März 1350.
@@ -143,8 +143,12 @@ Befehle: `npm test`, `npm run typecheck`, `npm run lint`, `npm run check` (alles
 - Alle Städte werden immer simuliert (≈1,5 s Rechenzeit pro Spieljahr).
 
 ### 5.3 Welt
-- Jede Stadt samt Umland ist eine eigene Tiled-Karte und Phaser-Szene; Reisen über eine Weltkarte.
-- Phaser-Szenen: `BootScene`, `CityScene` (parametrisiert pro Stadt), `WorldMapScene`.
+- Jede Stadt samt Umland ist ein Kachelraster (`cityLayout.ts`: Geländeart + Höhenstufe je Kachel), daraus baut `three/terrain.ts` 3D-Blöcke; 1 Kachel = 1 Welteinheit. Reisen über eine 3D-Weltkarte.
+- Ansichten: `CityView` (begehbare Stadt, parametrisiert pro Stadt), `WorldMapView` (während Reisen); `createWorld.ts` wählt und baut neu auf, wenn sich Grundriss-relevanter Besitz ändert.
+- **Steuerung per Maus:** Linksklick auf Boden = hinlaufen (A*-Wegsuche, `world/pathfinding.ts`, Stufen > 1 sind Wände), auf Gebäude = hinlaufen und Fenster öffnen, auf Sammelplatz = hinlaufen und Minispiel. Gedrückt halten = Figur folgt der Maus. Rechte Maustaste dreht, Mausrad zoomt.
+- Statische Geometrie wird nach Material zusammengefasst (`three/merge.ts`), Klickziele sind unsichtbare Proxy-Körper.
+- **Jede Stadt hat einen eigenen Grundriss** (`cityLayout.ts`): deterministischer Generator aus Stadtdaten (Größe, Kultur, Waren). Öffentliche Gebäude und Bauplätze hängen nie vom Besitz ab. Gebäude öffnen per Klick sofort ihr Fenster (Anwesenheit zählt je Stadt), Sammeln braucht Hinlaufen.
+- **Modelle:** prozedurale Platzhalter in `three/models`; echte Modelle als GLB über `public/models/manifest.json` (`three/modelLibrary.ts`), erzeugt mit `tools/blender/buildings.py` oder aus FBX (`tools/fbx2glb.py`). Buchführung in `docs/ASSETS_3D.md`, Audio-Liste in `docs/AUDIO.md`.
 
 ### 5.4 Preisbildung
 ```
@@ -165,7 +169,8 @@ Zielbestand = 2 Wochen Bedarf (Bürger + städtische Betriebe). Kauf/Verkauf mit
     /testing      # Test-Fixtures
     rng.ts, time.ts, context.ts, engine.ts
   /persistence    # SaveFile, Migrationen, SaveStorage-Interface
-  /game  /ui  /bridge   # folgen
+  /game          # 3D-Welt: cityLayout, world/pathfinding, three/ (Ansichten, Modelle, Gelände)
+  /ui  /bridge   # Angular-Oberfläche, GameService
 /docs             # ART_DIRECTION.md, GEBAEUDE_UND_WIRTSCHAFT.md
 ```
 
@@ -173,7 +178,7 @@ Zielbestand = 2 Wochen Bedarf (Bürger + städtische Betriebe). Kauf/Verkauf mit
 
 ## 6. Speichersystem
 
-- Freies Speichern/Laden, mehrere Slots, Autosave. Format `SaveFile` in `src/persistence/saveFile.ts`, aktuell **`saveVersion` 1**.
+- Freies Speichern/Laden, mehrere Slots, Autosave. Format `SaveFile` in `src/persistence/saveFile.ts`, aktuell **`saveVersion` 3**.
 - **Migrationen:** Bei jeder Änderung am Zustandsmodell `SAVE_VERSION` erhöhen und eine Migration in `MIGRATIONS` ergänzen, inklusive Test mit einem alten Beispielspielstand.
 - Adapter-Interface `SaveStorage` (Browser: IndexedDB, Electron: `userData`).
 
@@ -190,17 +195,17 @@ Einmalkauf über Steam (Electron), Browser-Demo (itch.io), eventuell Early Acces
 ## 9. Meilensteine
 
 ### Meilenstein 1 – Vertikaler Ausschnitt
-- [x] Projektsetup (TypeScript strict, Vitest, ESLint, Prettier) – Angular/Phaser folgen
+- [x] Projektsetup (TypeScript strict, Vitest, ESLint, Prettier, Angular, Three.js)
 - [x] Simulationskern: `GameState`, `createNewGame`, `applyCommand`, `tick`, geseedeter RNG
 - [x] Figurenauswahl (4 Figuren, Bonus wirkt sich aus)
-- [ ] Eine Stadt als Tiled-Karte, Figur läuft in Draufsicht herum
+- [x] Eine Stadt als 3D-Kachelwelt, Figur läuft per Mausklick herum (Tiled-Import folgt)
 - [x] Holz hacken (Timing-Qualität) → Command `ChopWood` (Sim-Seite)
 - [x] Markt: Holz verkaufen, Preis reagiert auf den Bestand
-- [ ] Angular-Oberfläche: Inventar, Geld, Marktfenster, Uhrzeit
+- [x] Angular-Oberfläche: Inventar, Geld, Marktfenster, Uhrzeit
 - [x] Tests für Preisbildung, Commands und Tick
 
 ### Zusätzlich bereits in der Simulation (vorgezogen)
-Alle Gebäude nach Patrizier-Logik (Kontor, Lagerhaus, 29 Betriebe, Wohnhäuser, Infrastruktur, Tempel, Taverne, Gilde, Stadthaus, Geldverleiher, Badehaus, Werft, Stadttor, Fest, Marktstand), Bevölkerung mit Zufriedenheit/Wachstum, Ansehen (sozial/gesellschaftlich), Ränge, Wahlen, Lia, Schiffe, Reisen, Frachtraum, Kredite, Katastrophen, Speicherformat v1.
+Fraktionen mit Bündnis, Schmuggel und Verruf (Speicherformat v3), Kapitäne für Alleinfahrten. Alle Gebäude nach Patrizier-Logik (Kontor, Lagerhaus, 29 Betriebe, Wohnhäuser, Infrastruktur, Tempel, Taverne, Gilde, Stadthaus, Geldverleiher, Badehaus, Werft, Stadttor, Fest, Marktstand), Bevölkerung mit Zufriedenheit/Wachstum, Ansehen (sozial/gesellschaftlich), Ränge, Wahlen, Lia, Schiffe, Reisen, Frachtraum, Kredite, Katastrophen.
 
 ### Meilenstein 2 – Zweite Stadt und Speichern
 - [ ] Weltkarte, Reisen mit Zeitvorlauf (Sim fertig)
@@ -250,4 +255,12 @@ Alle Gebäude nach Patrizier-Logik (Kontor, Lagerhaus, 29 Betriebe, Wohnhäuser,
 | 2026-10-02 | KI-Hintergrundhandel statt simulierter KI-Händler | Städte ohne Eigenproduktion bleiben versorgt; günstig zu rechnen; Spieler bleibt schneller und lukrativer |
 | 2026-10-02 | Städtische Produktion = 108 % des Weltbedarfs | Mit 100 % brach die Welt durch Transportverluste ein; Lücken entstehen durch Verteilung und Wachstum |
 | 2026-10-02 | Frühe Rangschwellen stark gesenkt (Krämer nach ~3–4 Wochen) | Fiera beginnt mittellos; Original-Schwellen erst ab Ratsherr |
+| 2026-10-03 | 3D mit Three.js statt 2D mit Phaser; Welt aus Kacheln mit Höhenstufen | Wunsch des Entwicklers (Stil wie Brave Conquest); Kachelraster bleibt Grundlage für Wegsuche und spätere Tiled-Karten |
+| 2026-10-03 | Figur per Maus (Klick-zum-Laufen, A*-Wegsuche) statt WASD | Wunsch des Entwicklers; Klick auf Ziel = hinlaufen und handeln |
+| 2026-10-03 | Platzhaltermodelle prozedural aus Grundkörpern; echte Modelle später als GLB (aus FBX via Blender) | Keine Assets aus unklaren Quellen; Fabrikfunktionen in `three/models` sind austauschbar |
+| 2026-10-03 | Eigener, generierter Grundriss je Stadt (Größe, Küste, Wald/Steinbruch-Seite, Straßennetz, Oberstadt, Wahrzeichen) | Städte sollen sich unterscheiden und Erkunden lohnen; Generator statt 26 Handkarten, bis Tiled-Karten kommen |
+| 2026-10-03 | Gebäude per Klick öffnen ohne Hinlaufen | Wunsch des Entwicklers; Anwesenheit (§2.3.2) gilt je Stadt |
+| 2026-10-03 | Schiffe fahren ohne Kapitän nur mit der Figur an Bord; Kapitän ab Kaufmann | Erst selbst, dann delegieren (§2.3.4); Kapitän hatte vorher keine Wirkung |
+| 2026-10-03 | Fraktionen (Gilde, Tempel, Hafenbruderschaft), ein Bündnis, Schmuggel und Verruf | Echte Zielkonflikte im Mittelteil: schnelles Geld gegen Leumund und politische Karriere |
+| 2026-10-03 | Gebäudemodelle per Python-Skript in Blender | Textbasiert, reproduzierbar, eigenes Werk (lizenzfrei); Stil bleibt einheitlich |
 | 2026-10-02 | Paragon-Daten korrigiert: Fleisch-Verbrauch, Salz in Fass, Kettenpreise (Barren 800, Riftstahl 3600, Essenz 2200) | Offensichtliche Tippfehler bzw. Veredelung war ein Verlustgeschäft |
